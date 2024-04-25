@@ -20,11 +20,8 @@ public class Monitor {
     public Monitor(String address, int port) {
         //establece una conexion
         try{
-
             socket = new Socket(address,port);
             System.out.println("Conexión establecida correctamente.");
-
-
             // Ciclo para recibir múltiples envíos del servidor
             while (true) {
                 try {
@@ -35,8 +32,6 @@ public class Monitor {
                     listaClientesAtendidasRecibida = (ArrayList<Cliente>) entrada.readObject();
                     System.out.println("Clientes recibidos: " + listaClientesAtendidasRecibida);
 
-
-
                     // Esperar el intervalo de tiempo antes de recibir los datos nuevamente
                     try {
                         Thread.sleep(INTERVALO_ENVIO_MS);
@@ -44,12 +39,6 @@ public class Monitor {
                         throw new RuntimeException(e);
                     }
 
-
-                    //Hay que hacer que muestre:
-                    // Cantidad de clientes atendidos
-                    // Tiempo min de espera
-                    // Tiempo max de espera
-                    // Tiempo promedio de espera
                     if (listaClientesAtendidasRecibida.size()!=0){
                         tiempoMinEspera = listaClientesAtendidasRecibida.get(0).calcularDuracionVisita();
                         tiempoMaxEspera = listaClientesAtendidasRecibida.get(0).calcularDuracionVisita();
@@ -65,20 +54,14 @@ public class Monitor {
 
                             sumaEspera = sumaEspera.plus(espera);
                         }
-
                         cantidadAtendidos = listaClientesAtendidasRecibida.size();
                         tiempoPromedioEspera = sumaEspera.dividedBy(cantidadAtendidos);
                     }
-
-
-
-
                 } catch (ClassNotFoundException e) {
                     System.err.println("Error: No se pudo encontrar la clase Cliente.");
                     e.printStackTrace();
                 }
             }
-
 
         }
         catch (UnknownHostException u){
@@ -100,9 +83,6 @@ public class Monitor {
                 e.printStackTrace();
             }
         }
-
-
-
     }
 
     public int getCantidadAtendidos() {

@@ -41,9 +41,9 @@ public class OperadorRequestHandler extends Thread {
                 if (solicitud.equals("LLAMAR_CLIENTE")) {
                     // Lógica para enviar un cliente al operador
                     Cliente clientePrimero = server.getCola().sacarCola();
-                    clientePrimero.setTiempoDeSalida(LocalTime.now());
                     System.out.println("Cliente sacado de la cola: " + clientePrimero);
                     if (clientePrimero != null) {
+                        clientePrimero.setTiempoDeSalida(LocalTime.now());
                         // Agregamos el cliente a la lista de clientes en atención
                         server.getClientesEnAtencion().add(clientePrimero); // para mostrar en NOTIFACION que seria el arreglo de clientesEnAtencion
                         // Enviamos el cliente al operador
@@ -69,9 +69,11 @@ public class OperadorRequestHandler extends Thread {
                         System.err.println("Clase no encontrada al leer el cliente del operador: " + exc.getMessage());
                         break; // Sale del bucle y termina el hilo
                     }
-                    // Agregamos el cliente modificado a la lista de clientes atendidos
-                    server.getClientesAtendidos().add(clienteModificado); //para mostrar en ESTADISTCIAS que seria el arreglo de clientesAtendidos
-                    server.getClientesEnAtencion().remove(clienteModificado);
+                    if (clienteModificado!=null){
+                        // Agregamos el cliente modificado a la lista de clientes atendidos
+                        server.getClientesAtendidos().add(clienteModificado); //para mostrar en ESTADISTCIAS que seria el arreglo de clientesAtendidos
+                        server.getClientesEnAtencion().remove(server.getClientesEnAtencion().get(0));
+                    }
                 } else {
                     // Manejar otras solicitudes si es necesario
                 }

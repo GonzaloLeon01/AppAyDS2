@@ -32,10 +32,6 @@ public class Operador {
         numeroCajaGlobal++;
         llamarCliente();
 
-
-
-
-
     }
 
     public void llamarCliente() {
@@ -48,10 +44,12 @@ public class Operador {
             //El servidor luego de recibir esa solicitud le envia el cliente
             Cliente clienteRecibido = (Cliente) entrada.readObject();
             //Al cliente enviado le asigna el numero de caja
-            clienteRecibido.setNumeroCaja(this.numeroCaja);
+            if (clienteRecibido!=null){
+                clienteRecibido.setNumeroCaja(this.numeroCaja);
+            }
             this.cliente=clienteRecibido;
             System.out.println(clienteRecibido);
-            despacharCliente(clienteRecibido);
+            //despacharCliente(clienteRecibido);
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
@@ -68,6 +66,7 @@ public class Operador {
             salida.writeObject(cliente);
             System.out.println(cliente);
             salida.flush();
+            this.cliente=null;
         } catch (IOException e) {
             e.printStackTrace();
         }
