@@ -10,7 +10,6 @@ import java.util.TimerTask;
 
 public class Server {
 
-    //inicializar socket y input stream
     private ServerSocket serverSocket = null;
     private Cola<Cliente> cola= new Cola<>();
     private ArrayList<Cliente> clientesEnAtencion= new ArrayList<>();
@@ -22,61 +21,71 @@ public class Server {
     private static final int PUERTO_TV=1236;
     private static final int PUERTO_ADMIN=1237;
     private static final int PUERTO_MONITOR=1500;
-    private boolean esPrimario=true;     //devuelve 1 si es principal el Monitor o devuelve 0 si es secundario.
+    private boolean esPrimario;     //devuelve 1 si es principal el Monitor o devuelve 0 si es secundario.
 
-    //Constructor con puerto
+
     public Server() {
 
         //Cada 30 segundos recibe mensaje del Monitor
         recibirMensajeMonitor();
+
         //Si el Monitor le dice que es primario entonces
-
-        //Si el Monitor le dice que es secundario entonces
-
-        if (esPrimario){ //Si es principal
-            try {
-                System.out.println("LLEGO AKA");
-                serverSocket = new ServerSocket(PUERTO_TOTTEM);
-                System.out.println("Server started");
-                System.out.println("Waiting for a client...");
-
-
-                TottemHandler tottemHandler = new TottemHandler(this);
-                tottemHandler.start(); //Inicia el hilo para recibir datos del Tottem
-
-                OperadorHandler operadorHandler = new OperadorHandler(this);
-                operadorHandler.start(); // Inicia el hilo para manejar la comunicación con el operador
-
-                EstadisticasHandler estadisticasHandler = new EstadisticasHandler(this);
-                estadisticasHandler.start(); //Inicia el hilo para enviar datos a Estadisticas
-
-                NotificacionHandler notificacionHandler = new NotificacionHandler(this);
-                notificacionHandler.start(); // Inicia el hilo para enviar datos a Notificacion
-
-
-                Timer timer = new Timer();
-
-                timer.scheduleAtFixedRate(new TimerTask() {
-                    @Override
-                    public void run() {
-                        System.out.println("Clientes en cola:"+cola.size());
-                        System.out.println("Clientes atendidos "+clientesAtendidos);
-                        System.out.println("Clientes en atencion "+clientesEnAtencion);
-                    }
-                }, 0, 15000); // 5000 milisegundos = 5 segundos
-
-                //Tengo que abrir un hilo para comunicarme con el servidor B para sincronizarlo.
-
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
+        if (esPrimario) { //Si es principal
+            iniciarServidorPrimario();
         } else { //es secundario
-            //Espera mensaje del Monitor para que se vuelva a convertir en primario.
-            System.out.println("entra else xd");
+            System.out.println("Servidor secundario en espera...");
+
+            // El servidor secundario está en espera hasta que reciba un mensaje del Monitor para volver a convertirse en primario
+            while (!esPrimario) {
+                try {
+                    Thread.sleep(1000); // Esperar 1 segundo antes de verificar nuevamente
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
+                // Verificar si se ha convertido en primario
+                if (esPrimario) {
+                    System.out.println("El servidor secundario se ha convertido en principal.");
+                    iniciarServidorPrimario(); // Llama al método para iniciar el servidor primario
+                }
+            }
         }
     }
 
+    private void iniciarServidorPrimario(){
+        try {
+            serverSocket = new ServerSocket(PUERTO_TOTTEM);
+            System.out.println("Server started");
+            System.out.println("Waiting for a client...");
+
+            TottemHandler tottemHandler = new TottemHandler(this);
+            tottemHandler.start(); // Inicia el hilo para recibir datos del Tottem
+
+            OperadorHandler operadorHandler = new OperadorHandler(this);
+            operadorHandler.start(); // Inicia el hilo para manejar la comunicación con el operador
+
+            EstadisticasHandler estadisticasHandler = new EstadisticasHandler(this);
+            estadisticasHandler.start(); // Inicia el hilo para enviar datos a Estadisticas
+
+            NotificacionHandler notificacionHandler = new NotificacionHandler(this);
+            notificacionHandler.start(); // Inicia el hilo para enviar datos a Notificacion
+
+            Timer timer = new Timer();
+            timer.scheduleAtFixedRate(new TimerTask() {
+                @Override
+                public void run() {
+                    System.out.println("Clientes en cola:" + cola.size());
+                    System.out.println("Clientes atendidos " + clientesAtendidos);
+                    System.out.println("Clientes en atencion " + clientesEnAtencion);
+                }
+            }, 0, 15000); // 5000 milisegundos = 5 segundos
+
+            //Tengo que abrir un hilo para comunicarme con el servidor B para sincronizarlo.
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
 
     public void procesarSolicitudTottem(Socket cliente){
