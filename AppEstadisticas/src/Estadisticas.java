@@ -3,7 +3,7 @@ import java.net.*;
 import java.time.Duration;
 import java.util.ArrayList;
 
-public class Monitor {
+public class Estadisticas {
 
     private Socket socket = null;
     private ObjectInputStream entrada=null;
@@ -17,7 +17,7 @@ public class Monitor {
     private Duration tiempoMaxEspera;
     private Duration tiempoPromedioEspera;
 
-    public Monitor(String address, int port) {
+    public Estadisticas(String address, int port) {
         //establece una conexion
         try{
             socket = new Socket(address,port);
@@ -118,6 +118,6 @@ public class Monitor {
     }
 
     public static void main(String[] args) {
-        Monitor monitor = new Monitor("127.0.0.1",PUERTO_ADMIN);
+        Estadisticas estadisticas = new Estadisticas("127.0.0.1",PUERTO_ADMIN);
     }
 }
