@@ -131,11 +131,12 @@ public class Tottem {
 
                         } catch (IOException i) {
                             System.out.println(i);
+                            break;
                         }
                     }
 
                 // Espera antes de volver a leer
-                Thread.sleep(10000); // 10 segundos
+                Thread.sleep(5000); // 5 segundos
             }
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();

@@ -26,7 +26,7 @@ public class Monitor {
     private static final int PUERTO_MONITOR_A_ADMIN=1703;
 
 
-
+    private int puertoServidorActual;
 
     public Monitor(int numeroPuertoPrimario, int numeroPuertoSecundario) {
         this.numeroPuertoPrimario = numeroPuertoPrimario;
@@ -36,11 +36,15 @@ public class Monitor {
     //Cada 30 segundos monitorea el estado de los servidores
     public void startMonitoring() {
         while (true) {
+            // Inicia el hilo para escuchar conexiones de los Tottens
+            Thread listenThread = new Thread(this::escucharConexionesTottem);
+            listenThread.start();
+
             System.out.println("Monitoreando estado servidores... ");
             checkServers();
             try {
-                // Dormir durante 30 segundos antes de la próxima verificación
-                Thread.sleep(5000);
+                // Dormir durante  segundos antes de la próxima verificación
+                Thread.sleep(1000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -58,11 +62,13 @@ public class Monitor {
             System.out.println("Server primario encendido. Server secundario apagado.");
             sendStatusToServer(numeroPuertoPrimario, 1);
             avisaATodos(primaryAlive,secondaryAlive);
+            setPuertoServidorActual(numeroPuertoPrimario);
             //le avisamos que es el principal al servidor Primario
         } else if (secondaryAlive) {
             System.out.println("Server secundario encendido. Server primario apagado.");
             sendStatusToServer(numeroPuertoSecundario, 1);
             avisaATodos(primaryAlive,secondaryAlive);
+            setPuertoServidorActual(numeroPuertoSecundario);
             //Le avisamos que es el principal al servidor Secundario
         } else {
             System.out.println("Both servers are down.");
@@ -81,7 +87,7 @@ public class Monitor {
     private void avisaATodos(boolean primaryAlive,boolean secondaryAlive){
         if (primaryAlive){
             System.out.println("Avisa a tottem de que se tiene que conectar al primario");
-            enviarNuevoPuertoTottem(PUERTO_TOTTEM1);
+            //enviarNuevoPuertoTottem(PUERTO_TOTTEM1);
             //enviarNuevoPuertoOperador(PUERTO_OPERADOR1);
             //enviarNuevoPuertoAdmin(PUERTO_ADMIN1);
             //enviarNuevoPuertoTV(PUERTO_TV1);
@@ -91,6 +97,35 @@ public class Monitor {
             //enviarNuevoPuertoOperador(PUERTO_OPERADOR2);
             //enviarNuevoPuertoAdmin(PUERTO_ADMIN2);
             //enviarNuevoPuertoTV(PUERTO_TV2);
+        }
+    }
+
+    private void escucharConexionesTottem() {
+        try (ServerSocket serverSocket = new ServerSocket(PUERTO_MONITOR_A_TOTTEM)) {
+            System.out.println("Esperando conexión del Tottem...");
+            while (true) {
+                Socket socket = serverSocket.accept(); // Espera a que se conecte un Tottem
+                System.out.println("Cliente (Tottem) conectado desde " + socket.getInetAddress() + ":" + socket.getPort());
+
+                // Envía el nuevo puerto del servidor primario al Tottem
+                try (DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream())) {
+                    if (puertoServidorActual==PUERTO_MONITOR){
+                        outputStream.writeInt(PUERTO_TOTTEM1);
+                        System.out.println("Puerto del servidor primario enviado al Tottem: " + PUERTO_TOTTEM1);
+                    }
+                    else{
+                        outputStream.writeInt(PUERTO_TOTTEM2);
+                        System.out.println("Puerto del servidor primario enviado al Tottem: " + PUERTO_TOTTEM2);
+
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+                socket.close();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -239,5 +274,9 @@ public class Monitor {
 
         Monitor monitor = new Monitor(numeroPuertoPrimario, numeroPuertoSecundario);
         monitor.startMonitoring();
+    }
+
+    public void setPuertoServidorActual(int puertoServidorActual) {
+        this.puertoServidorActual = puertoServidorActual;
     }
 }
