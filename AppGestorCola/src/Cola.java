@@ -1,7 +1,8 @@
+import java.io.Serializable;
 import java.util.Queue;
 import java.util.LinkedList;
 
-public class Cola<Cliente> {
+public class Cola<Cliente> implements Serializable {
     private Queue<Cliente> cola;
 
     public Cola(){

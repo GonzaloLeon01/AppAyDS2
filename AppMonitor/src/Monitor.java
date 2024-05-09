@@ -18,7 +18,7 @@ public class Monitor {
     private static final int PUERTO_TV2=2236;
     private static final int PUERTO_ADMIN2=2237;
 
-    private static final int PUERTO_MONITOR=1500;
+   // private static final int PUERTO_MONITOR=1500;
 
     private static final int PUERTO_MONITOR_A_TOTTEM=1700;
     private static final int PUERTO_MONITOR_A_OPERADOR=1701;
@@ -26,7 +26,7 @@ public class Monitor {
     private static final int PUERTO_MONITOR_A_ADMIN=1703;
 
 
-    private int puertoServidorActual;
+    private int puertoServidorActual=-1;
 
     public Monitor(int numeroPuertoPrimario, int numeroPuertoSecundario) {
         this.numeroPuertoPrimario = numeroPuertoPrimario;
@@ -39,7 +39,6 @@ public class Monitor {
             // Inicia el hilo para escuchar conexiones de los Tottens
             Thread listenThread = new Thread(this::escucharConexionesTottem);
             listenThread.start();
-
             System.out.println("Monitoreando estado servidores... ");
             checkServers();
             try {
@@ -51,6 +50,37 @@ public class Monitor {
         }
     }
 
+    private void escucharConexionesTottem() {
+        try (ServerSocket serverSocket = new ServerSocket(PUERTO_MONITOR_A_TOTTEM)) {
+            System.out.println("Esperando conexión del Tottem...");
+            while (true) {
+                Socket socket = serverSocket.accept(); // Espera a que se conecte un Tottem
+                System.out.println("Cliente (Tottem) conectado desde " + socket.getInetAddress() + ":" + socket.getPort());
+
+                // Envía el nuevo puerto del servidor primario al Tottem
+                if (puertoServidorActual!=-1){
+                    try (DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream())) {
+                        if (puertoServidorActual==numeroPuertoPrimario){
+                            outputStream.writeInt(PUERTO_TOTTEM1);
+                            System.out.println("Puerto del servidor primario enviado al Tottem: " + PUERTO_TOTTEM1);
+                        }
+                        else if (puertoServidorActual==numeroPuertoSecundario){
+                            outputStream.writeInt(PUERTO_TOTTEM2);
+                            System.out.println("Puerto del servidor primario enviado al Tottem: " + PUERTO_TOTTEM2);
+
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+
+                    //Esto capaz sacar
+                    socket.close();
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
     private void checkServers() {
         this.primaryAlive = checkServer( numeroPuertoPrimario); //true si hay conexion, false si no hay conexion
@@ -60,20 +90,31 @@ public class Monitor {
             System.out.println("Ambos servers estan encendidos.");
             sendStatusToServer(numeroPuertoPrimario, 3);
             sendStatusToServer(numeroPuertoSecundario, 3);
-        } else if (primaryAlive) {
-            System.out.println("Server primario encendido. Server secundario apagado.");
+        } else if (primaryAlive && !secondaryAlive) {
+            System.out.println("Server A encendido. Server B apagado.");
+
+            //Le avisa al server A que se vuelva primario
             sendStatusToServer(numeroPuertoPrimario, 1);
+            //Le avisa al server B que es secundario
             sendStatusToServer(numeroPuertoSecundario, 0);
-            avisaATodos(primaryAlive,secondaryAlive);
+            //Setea el atributo de la clase Monitor puertoServidorActual
             setPuertoServidorActual(numeroPuertoPrimario);
-            //le avisamos que es el principal al servidor Primario
-        } else if (secondaryAlive) {
-            System.out.println("Server secundario encendido. Server primario apagado.");
-            sendStatusToServer(numeroPuertoSecundario, 1);
-            sendStatusToServer(numeroPuertoPrimario, 0);
+
+            //Avisa a las demas componentes a que server conectarse
             avisaATodos(primaryAlive,secondaryAlive);
+        } else if (secondaryAlive && !primaryAlive) {
+            System.out.println("Server B encendido. Server A apagado.");
+
+            //Le avisa al server B que se vuelva primario
+            sendStatusToServer(numeroPuertoSecundario, 1);
+            //Le avisa al server A que es secundario
+            sendStatusToServer(numeroPuertoPrimario, 0);
+
+            //Setea el atributo de la clase Monitor puertoServidorActual
             setPuertoServidorActual(numeroPuertoSecundario);
-            //Le avisamos que es el principal al servidor Secundario
+
+            //Avisa a las demas componentes a que server conectarse
+            avisaATodos(primaryAlive,secondaryAlive);
         } else {
             System.out.println("Both servers are down.");
         }
@@ -89,50 +130,37 @@ public class Monitor {
     }
 
     private void avisaATodos(boolean primaryAlive,boolean secondaryAlive){
-        if (primaryAlive){
+
+        if (this.puertoServidorActual == numeroPuertoPrimario) {
             System.out.println("Avisa a tottem de que se tiene que conectar al primario");
+            System.out.println("ya esta avisando al servidor en un hilo aparte se supone");
+            //enviarNuevoPuertoTottem(PUERTO_TOTTEM1);
+
+
+        } else if (this.puertoServidorActual == numeroPuertoSecundario) {
+            System.out.println("Avisa a tottem de que se tiene que conectar al secundario");
+            System.out.println("ya esta avisando al servidor en un hilo aparte se supone");
+            //enviarNuevoPuertoTottem(PUERTO_TOTTEM2);
+
+        } else
+            System.out.println("El monitor no tiene seteado valor puerto Servidor Actual="+puertoServidorActual);
+
+
+       /* if (primaryAlive){
             //enviarNuevoPuertoTottem(PUERTO_TOTTEM1);
             //enviarNuevoPuertoOperador(PUERTO_OPERADOR1);
             //enviarNuevoPuertoAdmin(PUERTO_ADMIN1);
             //enviarNuevoPuertoTV(PUERTO_TV1);
         } else if (secondaryAlive) {
-            System.out.println("Avisa a tottem de que se tiene que conectar al secundario");
-            enviarNuevoPuertoTottem(PUERTO_TOTTEM2);
+            //enviarNuevoPuertoTottem(PUERTO_TOTTEM2);
             //enviarNuevoPuertoOperador(PUERTO_OPERADOR2);
             //enviarNuevoPuertoAdmin(PUERTO_ADMIN2);
             //enviarNuevoPuertoTV(PUERTO_TV2);
-        }
+        } */
     }
 
-    private void escucharConexionesTottem() {
-        try (ServerSocket serverSocket = new ServerSocket(PUERTO_MONITOR_A_TOTTEM)) {
-            System.out.println("Esperando conexión del Tottem...");
-            while (true) {
-                Socket socket = serverSocket.accept(); // Espera a que se conecte un Tottem
-                System.out.println("Cliente (Tottem) conectado desde " + socket.getInetAddress() + ":" + socket.getPort());
 
-                // Envía el nuevo puerto del servidor primario al Tottem
-                try (DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream())) {
-                    if (puertoServidorActual==PUERTO_MONITOR){
-                        outputStream.writeInt(PUERTO_TOTTEM1);
-                        System.out.println("Puerto del servidor primario enviado al Tottem: " + PUERTO_TOTTEM1);
-                    }
-                    else{
-                        outputStream.writeInt(PUERTO_TOTTEM2);
-                        System.out.println("Puerto del servidor primario enviado al Tottem: " + PUERTO_TOTTEM2);
-
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-                socket.close();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
+/*
     private void enviarNuevoPuertoTottem(int puertoNuevoServidorPrimario) {
         ServerSocket serverSocket=null;
         Socket socket = null;
@@ -162,7 +190,9 @@ public class Monitor {
                  System.err.println("Error al cerrar el socket del servidor:");
                  e.printStackTrace();
                 }
-             }/*
+             }
+
+
             // Cierra los recursos
             if (outputStream != null) {
                 try {
@@ -180,9 +210,10 @@ public class Monitor {
                     e.printStackTrace();
                 }
             }
-*/
+
         }
     }
+    */
 
     //Le envia a cada servidor un mensaje para que se vuelvan primario/secundario.
     private void sendStatusToServer(int serverPort, int status) {
