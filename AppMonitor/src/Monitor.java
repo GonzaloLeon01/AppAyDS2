@@ -7,8 +7,7 @@ public class Monitor {
     private int numeroPuertoServidorA;
     private int numeroPuertoServidorB;
 
-    private boolean primaryAlive;
-    private boolean secondaryAlive;
+
 
     private static final int PUERTO_TOTTEM1=1234;
     private static final int PUERTO_OPERADOR1=1300;
@@ -47,6 +46,9 @@ public class Monitor {
             Thread listenThread3 = new Thread(this::escucharConexionesTV);
             listenThread3.start();
 
+            Thread listenThread4 = new Thread(this::escucharConexionesOperador);
+            listenThread4.start();
+
             System.out.println("Monitoreando estado servidores... ");
             checkServers();
             try {
@@ -58,6 +60,38 @@ public class Monitor {
         }
     }
 
+
+    private void escucharConexionesOperador(){
+        try (ServerSocket serverSocket = new ServerSocket(PUERTO_MONITOR_A_OPERADOR)) {
+            System.out.println("Esperando conexión del operador...");
+            while (true) {
+                Socket socket = serverSocket.accept(); // Espera a que se conecte un Tottem
+                System.out.println("Operador conectada desde " + socket.getInetAddress() + ":" + socket.getPort());
+
+                // Envía el nuevo puerto del servidor primario al Tottem
+                if (puertoServidorPrimario!=-1){
+                    try (DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream())) {
+                        if (puertoServidorPrimario==numeroPuertoServidorA){
+                            outputStream.writeInt(PUERTO_OPERADOR1);
+                            System.out.println("Puerto del servidor primario enviado a Operador: " + PUERTO_OPERADOR1);
+                        }
+                        else if (puertoServidorPrimario==numeroPuertoServidorB){
+                            outputStream.writeInt(PUERTO_OPERADOR2);
+                            System.out.println("Puerto del servidor primario enviado a Operador: " + PUERTO_OPERADOR2);
+
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+
+                    //Esto capaz sacar
+                    socket.close();
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
 
     private void escucharConexionesTV(){
@@ -158,8 +192,11 @@ public class Monitor {
     }
 
     private void checkServers() {
-        this.primaryAlive = checkServer( numeroPuertoServidorA); //true si hay conexion, false si no hay conexion
-        this.secondaryAlive = checkServer( numeroPuertoServidorB); //true si hay conexion, false si no hay conexion
+        boolean primaryAlive;
+        boolean secondaryAlive;
+
+        primaryAlive = checkServer( numeroPuertoServidorA); //true si hay conexion, false si no hay conexion
+        secondaryAlive = checkServer( numeroPuertoServidorB); //true si hay conexion, false si no hay conexion
 
         if (primaryAlive && secondaryAlive) {
             System.out.println("Ambos servers estan encendidos.");

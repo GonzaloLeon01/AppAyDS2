@@ -40,7 +40,25 @@ public class OperadorRequestHandler extends Thread {
 
 
                 // Manejar la solicitud
-                if (solicitud.equals("DESPACHAR_CLIENTE")) {
+                if (solicitud.length() <= 3) {
+                    // Lógica para enviar un cliente al operador
+                    Cliente clientePrimero = server.getCola().sacarCola();
+                    System.out.println("Cliente sacado de la cola: " + clientePrimero);
+                    if (clientePrimero != null) {
+                        clientePrimero.setTiempoDeSalida(LocalTime.now());
+                        clientePrimero.setNumeroCaja(Integer.parseInt(solicitud));
+                        // Agregamos el cliente a la lista de clientes en atención
+                        server.getClientesEnAtencion().add(clientePrimero); // para mostrar en NOTIFACION que seria el arreglo de clientesEnAtencion
+                        // Enviamos el cliente al operador
+                        try {
+                            salida.writeObject(clientePrimero);
+                            salida.flush();
+                        } catch (IOException exc) {
+                            System.err.println("Error al enviar el cliente al operador: " + exc.getMessage());
+                            break; // Sale del bucle y termina el hilo                        }
+                        }
+                    }
+                } else if (solicitud.equals("DESPACHAR_CLIENTE")) {
                     // Lógica para recibir un cliente del operador y hacer algo con él
                     Cliente clienteModificado = null;
                     try {
@@ -57,39 +75,30 @@ public class OperadorRequestHandler extends Thread {
                     if (clienteModificado != null) {
                         // Agregamos el cliente modificado a la lista de clientes atendidos
                         server.getClientesAtendidos().add(clienteModificado); //para mostrar en ESTADISTCIAS que seria el arreglo de clientesAtendidos
-                        server.getClientesEnAtencion().remove(server.getClientesEnAtencion().get(0));
-                    }
-                }
-                else
-                    if (solicitud.length()<3 ) { //RECIBE UN NUMERO CAJA
-                        // Lógica para enviar un cliente al operador
-                        Cliente clientePrimero = server.getCola().sacarCola();
-                        System.out.println("Cliente sacado de la cola: " + clientePrimero);
-                        if (clientePrimero != null) {
-                            clientePrimero.setTiempoDeSalida(LocalTime.now());
-                            //Aca setear numero de caja
-                            clientePrimero.setNumeroCaja(Integer.parseInt(solicitud));
-                            // Agregamos el cliente a la lista de clientes en atención
-                            server.getClientesEnAtencion().add(clientePrimero); // para mostrar en NOTIFACION que seria el arreglo de clientesEnAtencion
-                            // Enviamos el cliente al operador
-                            try {
-                                salida.writeObject(clientePrimero);
-                                salida.flush();
-                            } catch (IOException exc) {
-                                System.err.println("Error al enviar el cliente al operador: " + exc.getMessage());
-                                break; // Sale del bucle y termina el hilo                        }
+                        //server.getClientesEnAtencion().remove(server.getClientesEnAtencion().get(0));
+                        Cliente clienteEncontrado = null;
+                        for (Cliente encontrado : server.getClientesEnAtencion()) {
+                            if (encontrado.getDni().equals(clienteModificado.getDni())) {
+                                clienteEncontrado = encontrado;
+                                break;
                             }
                         }
-                    }
+                        if(clienteEncontrado!=null)
+                            server.getClientesEnAtencion().remove(clienteEncontrado);
 
+                    }
+                } else {
+                    // Manejar otras solicitudes si es necesario
+                }
             }
 
         } catch (IOException e) {
             System.err.println("Error durante la comunicación con el operador: " + e.getMessage());
         } finally {
             try {
-                if (operadorCliente != null)
+                if (operadorCliente != null) {
                     operadorCliente.close();
+                }
             } catch (IOException ex) {
                 System.err.println("Error al cerrar el socket del operador: " + ex.getMessage());
             }
