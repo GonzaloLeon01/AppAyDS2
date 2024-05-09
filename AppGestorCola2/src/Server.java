@@ -27,7 +27,7 @@ public class Server {
 
     public Server() {
 
-        //Cada 30 segundos recibe mensaje del Monitor
+        //Cada 1 segundos recibe mensaje del Monitor
         recibirMensajeMonitor();
 
         //Si el Monitor le dice que es primario entonces
@@ -89,15 +89,11 @@ public class Server {
                 esPrimario=false;
             else if (mensaje == 3 && esPrimario) {
                 //Si envia el mensaje 3 es porque los dos servers estan prendidos
-                System.out.println("ENVIANDO COLA AL SERVIDOR SECUNDARIO");
                 sincronizarServidorSecundario();
-                //enviarColaAServidorSecundario();
             }
             else if (mensaje == 3 && !esPrimario) {
                 //Si envia el mensaje 3 es porque los dos servers estan prendidos
-                System.out.println("Listo para recibir la cola del servidor PRIMARIO");
                 recibirSincronizacionServidorPrimario();
-                //recibirColaDelServidorPrincipal();
             }
 
             System.out.println("Valor de esPrimario actualizado a: " + esPrimario);
@@ -149,13 +145,13 @@ public class Server {
 
     private void sincronizarServidorSecundario(){
         Thread enviarColaThread = new Thread(() -> {
-            System.out.println("TRATANDO DE ENVIAR COLA PRINCIPAL");
             Socket socket = null;
             try {
                 socket = new Socket("127.0.0.1", 3000);
                 ObjectOutputStream outputStream = new ObjectOutputStream(socket.getOutputStream());
-                outputStream.writeObject(cola); // Envía la cola actual al servidor secundario
-                System.out.println("XXXXxCola enviada al servidor secundario.XXXXXx");
+                outputStream.writeObject(cola);
+                outputStream.writeObject(clientesEnAtencion);
+                outputStream.writeObject(clientesAtendidos);
             } catch (IOException e) {
                 System.out.println("No puede conectarse al servidor secundario xd");
             }
@@ -167,27 +163,23 @@ public class Server {
         Thread recibirColaThread = new Thread(() -> {
             try {
                 serverSocket = new ServerSocket(3100);
-                System.out.println("XXXXXXXXXXxEsperando conexion del servidor principal...XXXXXXXXXx");
+                //System.out.println("XXXXXXXXXXxEsperando conexion del servidor principal...XXXXXXXXXx");
                 Socket socket = serverSocket.accept();
-                System.out.println("XXXXXXXXXXConecto el servidor primarioXXXXXXXXXXXXX");
+                //System.out.println("XXXXXXXXXXConecto el servidor primarioXXXXXXXXXXXXX");
                 ObjectInputStream inputStream = new ObjectInputStream(socket.getInputStream());
-                System.out.println("MARIKA");
                 Cola<Cliente> colaRecibida = null;
                 try {
-                    colaRecibida = (Cola<Cliente>) inputStream.readObject();
+                    this.cola = (Cola<Cliente>) inputStream.readObject();
+                    this.clientesEnAtencion=(ArrayList<Cliente>) inputStream.readObject();
+                    this.clientesAtendidos=(ArrayList<Cliente>) inputStream.readObject();
                 } catch (ClassNotFoundException e) {
                     System.out.println("Clase no encontrada");
                 }
-                System.out.println("MARIKA 2");
-                this.cola = colaRecibida; // Actualiza la cola del servidor secundario con la cola recibida del servidor principal
-                System.out.println("Cola recibida del servidor principal.");
-                System.out.println("Mostrando cola");
-                System.out.println(cola);
                 inputStream.close();
                 socket.close();
                 serverSocket.close();
             } catch (IOException e) {
-                System.out.println("No puede conectarse al servidor secundario xd");
+                System.out.println("No puede conectarse al servidor secundario");
             }
         });
         recibirColaThread.start();

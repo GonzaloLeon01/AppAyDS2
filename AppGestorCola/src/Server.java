@@ -27,7 +27,7 @@ public class Server {
 
     public Server() {
 
-        //Cada 30 segundos recibe mensaje del Monitor
+        //Cada 1 segundos recibe mensaje del Monitor
         recibirMensajeMonitor();
 
         //Si el Monitor le dice que es primario entonces
@@ -89,15 +89,11 @@ public class Server {
                 esPrimario=false;
             else if (mensaje == 3 && esPrimario) {
                 //Si envia el mensaje 3 es porque los dos servers estan prendidos
-                System.out.println("ENVIANDO COLA AL SERVIDOR SECUNDARIO");
                 sincronizarServidorSecundario();
-                //enviarColaAServidorSecundario();
             }
             else if (mensaje == 3 && !esPrimario) {
                 //Si envia el mensaje 3 es porque los dos servers estan prendidos
-                System.out.println("Listo para recibir la cola del servidor PRIMARIO");
                 recibirSincronizacionServidorPrimario();
-                //recibirColaDelServidorPrincipal();
             }
 
             System.out.println("Valor de esPrimario actualizado a: " + esPrimario);
@@ -127,7 +123,6 @@ public class Server {
             NotificacionHandler notificacionHandler = new NotificacionHandler(this);
             notificacionHandler.start(); // Inicia el hilo para enviar datos a Notificacion
 
-
             Timer timer = new Timer();
             timer.scheduleAtFixedRate(new TimerTask() {
                 @Override
@@ -149,13 +144,13 @@ public class Server {
 
     private void sincronizarServidorSecundario(){
         Thread enviarColaThread = new Thread(() -> {
-            System.out.println("TRATANDO DE ENVIAR COLA PRINCIPAL");
             Socket socket = null;
             try {
                 socket = new Socket("127.0.0.1", 3100);
                 ObjectOutputStream outputStream = new ObjectOutputStream(socket.getOutputStream());
-                outputStream.writeObject(cola); // Envía la cola actual al servidor secundario
-                System.out.println("XXXXxCola enviada al servidor secundario.XXXXXx");
+                outputStream.writeObject(cola);
+                outputStream.writeObject(clientesEnAtencion);
+                outputStream.writeObject(clientesAtendidos);
             } catch (IOException e) {
                 System.out.println("No puede conectarse al servidor secundario xd");
             }
@@ -167,77 +162,28 @@ public class Server {
         Thread recibirColaThread = new Thread(() -> {
         try {
             serverSocket = new ServerSocket(3000);
-            System.out.println("XXXXXXXXXXxEsperando conexion del servidor principal...XXXXXXXXXx");
+            //System.out.println("XXXXXXXXXXxEsperando conexion del servidor principal...XXXXXXXXXx");
             Socket socket = serverSocket.accept();
-            System.out.println("XXXXXXXXXXConecto el servidor primarioXXXXXXXXXXXXX");
+            //System.out.println("XXXXXXXXXXConecto el servidor primarioXXXXXXXXXXXXX");
             ObjectInputStream inputStream = new ObjectInputStream(socket.getInputStream());
-            System.out.println("MARIKA");
             Cola<Cliente> colaRecibida = null;
             try {
-                colaRecibida = (Cola<Cliente>) inputStream.readObject();
+                this.cola = (Cola<Cliente>) inputStream.readObject();
+                this.clientesEnAtencion=(ArrayList<Cliente>) inputStream.readObject();
+                this.clientesAtendidos=(ArrayList<Cliente>) inputStream.readObject();
             } catch (ClassNotFoundException e) {
                 System.out.println("Clase no encontrada");
             }
-            this.cola = colaRecibida; // Actualiza la cola del servidor secundario con la cola recibida del servidor principal
-            System.out.println("Cola recibida del servidor principal.");
-            System.out.println("Mostrando cola");
-            System.out.println(cola);
             inputStream.close();
             socket.close();
             serverSocket.close();
         } catch (IOException e) {
-            System.out.println("No puede conectarse al servidor secundario xd");
+            System.out.println("No puede conectarse al servidor secundario");
         }
     });
         recibirColaThread.start();
     }
 
-
-
-
-    // Método para recibir la cola del servidor principal
-    private void recibirColaDelServidorPrincipal() {
-        Thread recibirColaThread = new Thread(() -> {
-            ServerSocket serverSocket=null;
-            while (true) {
-                if (!esPrimario){
-                    try {
-                        System.out.println("TRATANDO DE RECIBIR COLA PRINCIPAL");
-                        if (serverSocket!=null)
-                            serverSocket.close();
-                        else {
-                            serverSocket = new ServerSocket(3000);
-                            System.out.println("XXXXXXXXXXxEsperando la cola del servidor principal...XXXXXXXXXx");
-                            Socket socket = serverSocket.accept();
-                            System.out.println("Conexion con la cola del servidor principal...");
-                            ObjectInputStream inputStream = new ObjectInputStream(socket.getInputStream());
-                            Cola<Cliente> colaRecibida = (Cola<Cliente>) inputStream.readObject();
-                            cola = colaRecibida; // Actualiza la cola del servidor secundario con la cola recibida del servidor principal
-                            System.out.println("Cola recibida del servidor principal.");
-                            inputStream.close();
-                            socket.close();
-                            serverSocket.close();
-                            break; // Si se recibe con éxito, salir del bucle
-                        }
-                    } catch (IOException | ClassNotFoundException e) {
-                        System.err.println("Error al intentar recibir la cola del servidor principal: " + e.getMessage());
-                        // Esperar un tiempo antes de intentar nuevamente
-                        try {
-                            Thread.sleep(5000); // Esperar 5 segundos antes de intentar nuevamente
-                        } catch (InterruptedException ex) {
-                            ex.printStackTrace();
-                        }
-                    }
-                }
-                else {
-                    System.err.println("No tiene sentido que un primario reciba cola  si es primario KKK");
-                    break;
-                }
-
-            }
-        });
-        recibirColaThread.start();
-    }
 
     public void procesarSolicitudTottem(Socket cliente){
         TottemRequestHandler requestHandler = new TottemRequestHandler(this,cliente);
