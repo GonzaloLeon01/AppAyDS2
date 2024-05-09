@@ -58,15 +58,19 @@ public class Monitor {
 
         if (primaryAlive && secondaryAlive) {
             System.out.println("Ambos servers estan encendidos.");
+            sendStatusToServer(numeroPuertoPrimario, 3);
+            sendStatusToServer(numeroPuertoSecundario, 3);
         } else if (primaryAlive) {
             System.out.println("Server primario encendido. Server secundario apagado.");
             sendStatusToServer(numeroPuertoPrimario, 1);
+            sendStatusToServer(numeroPuertoSecundario, 0);
             avisaATodos(primaryAlive,secondaryAlive);
             setPuertoServidorActual(numeroPuertoPrimario);
             //le avisamos que es el principal al servidor Primario
         } else if (secondaryAlive) {
             System.out.println("Server secundario encendido. Server primario apagado.");
             sendStatusToServer(numeroPuertoSecundario, 1);
+            sendStatusToServer(numeroPuertoPrimario, 0);
             avisaATodos(primaryAlive,secondaryAlive);
             setPuertoServidorActual(numeroPuertoSecundario);
             //Le avisamos que es el principal al servidor Secundario

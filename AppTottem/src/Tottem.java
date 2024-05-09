@@ -90,8 +90,6 @@ public class Tottem {
     // Constructor para colocar ip y puerto
     public Tottem(String address) {
         try {
-
-
             while (true) {
                 System.out.println("Conectando con el Monitor...");
                 Socket monitorSocket = new Socket(address, PUERTO_MONITOR_A_TOTTEM);

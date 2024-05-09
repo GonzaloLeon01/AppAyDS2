@@ -38,7 +38,8 @@ public class Operador {
         // Enviar solicitud al servidor para obtener un objeto Cliente
         try {
             //Le envia al servidor una solicitud llamar cliente
-            salida.writeObject("LLAMAR_CLIENTE");
+            //salida.writeObject("LLAMAR_CLIENTE");
+            salida.writeObject(this.numeroCaja);
             salida.flush();
 
             //El servidor luego de recibir esa solicitud le envia el cliente

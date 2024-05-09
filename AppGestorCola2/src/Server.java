@@ -21,7 +21,8 @@ public class Server {
     private static final int PUERTO_TV=2236;
     private static final int PUERTO_ADMIN=2237;
     private static final int PUERTO_MONITOR=2500;
-    private boolean esPrimario;     //devuelve 1 si es principal el Monitor o devuelve 0 si es secundario.
+    private static final int PUERTO_SERVIDOR=1500;
+    private boolean esPrimario=false;     //devuelve 1 si es principal el Monitor o devuelve 0 si es secundario.
 
 
     public Server() {
@@ -38,6 +39,7 @@ public class Server {
             // El servidor secundario está en espera hasta que reciba un mensaje del Monitor para volver a convertirse en primario
             while (!esPrimario) {
                 try {
+                    //recibirColaDelServidorPrincipal();
                     Thread.sleep(1000); // Esperar 1 segundo antes de verificar nuevamente
                 } catch (InterruptedException e) {
                     e.printStackTrace();
@@ -70,6 +72,8 @@ public class Server {
             NotificacionHandler notificacionHandler = new NotificacionHandler(this);
             notificacionHandler.start(); // Inicia el hilo para enviar datos a Notificacion
 
+           // enviarColaAServidorSecundario();
+
             Timer timer = new Timer();
             timer.scheduleAtFixedRate(new TimerTask() {
                 @Override
@@ -77,6 +81,7 @@ public class Server {
                     System.out.println("Clientes en cola:" + cola.size());
                     System.out.println("Clientes atendidos " + clientesAtendidos);
                     System.out.println("Clientes en atencion " + clientesEnAtencion);
+                    System.out.println("estado ="+esPrimario);
                 }
             }, 0, 15000); // 5000 milisegundos = 5 segundos
 
@@ -124,8 +129,20 @@ public class Server {
             System.out.println("Mensaje recibido del monitor: " + mensaje);
 
             // Actualizar el valor de esPrimario según el mensaje recibido
-            this.esPrimario = (mensaje == 1);
+            if (mensaje == 1)
+                esPrimario=true;
+            else if (mensaje == 0)
+                esPrimario=false;
+            else if (mensaje == 3 && !esPrimario)
+                esPrimario=false;
+            else if (mensaje == 3 && esPrimario)
+                esPrimario=true;
+            //this.esPrimario = (mensaje == 1);
             System.out.println("Valor de esPrimario actualizado a: " + esPrimario);
+            if (esPrimario)
+                enviarColaAServidorSecundario();
+            else
+                recibirColaDelServidorPrincipal();
         } catch (EOFException e) {
             // Ignorar la excepción EOFException y continuar esperando conexiones del monitor
         } catch (IOException e) {
@@ -133,6 +150,91 @@ public class Server {
         }
     }
 
+    // Método para enviar la cola actual al servidor secundario
+    private void enviarColaAServidorSecundario() {
+        Thread enviarColaThread = new Thread(() -> {
+            while (true) {
+                if (esPrimario) {
+                    try {
+                        try {
+                            Thread.sleep(3000); // Esperar 5 segundos antes de intentar nuevamente
+                            System.out.println("No puede conectarse al servidor secundario xd");
+                        } catch (InterruptedException ex) {
+                            ex.printStackTrace();
+                        }
+                        System.out.println("TRATANDO DE ENVIAR COLA PRINCIPAL");
+                        Socket socket = new Socket("127.0.0.1", 3000);
+                        ObjectOutputStream outputStream = new ObjectOutputStream(socket.getOutputStream());
+                        outputStream.writeObject(cola); // Envía la cola actual al servidor secundario
+                        System.out.println("XXXXxCola enviada al servidor secundario.XXXXXx");
+                        outputStream.close();
+                        socket.close();
+                        break; // Si se envía con éxito, salir del bucle
+                    } catch (IOException e) {
+                        System.err.println("Error al intentar enviar la cola al servidor secundario: " + e.getMessage());
+                        // Esperar un tiempo antes de intentar nuevamente
+                        try {
+                            Thread.sleep(5000); // Esperar 5 segundos antes de intentar nuevamente
+                            System.out.println("No puede conectarse al servidor secundario xd");
+                        } catch (InterruptedException ex) {
+                            ex.printStackTrace();
+                        }
+                    }
+                }
+                else{
+                    System.err.println("No tiene sentido que un secundario envie cola a primario KKK");
+                    break;
+                }
+
+            }
+        });
+        enviarColaThread.start();
+    }
+
+
+    // Método para recibir la cola del servidor principal
+    private void recibirColaDelServidorPrincipal() {
+        Thread recibirColaThread = new Thread(() -> {
+            ServerSocket serverSocket=null;
+            while (true) {
+                if (!esPrimario){
+                    try {
+                        System.out.println("TRATANDO DE RECIBIR COLA PRINCIPAL");
+                        if (serverSocket!=null)
+                            serverSocket.close();
+                        else {
+                            serverSocket = new ServerSocket(3100);
+                            System.out.println("XXXXXXXXXXxEsperando la cola del servidor principal...XXXXXXXXXx");
+                            Socket socket = serverSocket.accept();
+                            System.out.println("Conexion con la cola del servidor principal...");
+                            ObjectInputStream inputStream = new ObjectInputStream(socket.getInputStream());
+                            Cola<Cliente> colaRecibida = (Cola<Cliente>) inputStream.readObject();
+                            cola = colaRecibida; // Actualiza la cola del servidor secundario con la cola recibida del servidor principal
+                            System.out.println("Cola recibida del servidor principal.");
+                            inputStream.close();
+                            socket.close();
+                            serverSocket.close();
+                            break; // Si se recibe con éxito, salir del bucle
+                        }
+                    } catch (IOException | ClassNotFoundException e) {
+                        System.err.println("Error al intentar recibir la cola del servidor principal: " + e.getMessage());
+                        // Esperar un tiempo antes de intentar nuevamente
+                        try {
+                            Thread.sleep(5000); // Esperar 5 segundos antes de intentar nuevamente
+                        } catch (InterruptedException ex) {
+                            ex.printStackTrace();
+                        }
+                    }
+                }
+                else {
+                    System.err.println("No tiene sentido que un primario reciba cola  si es primario KKK");
+                    break;
+                }
+
+            }
+        });
+        recibirColaThread.start();
+    }
 
 
 
