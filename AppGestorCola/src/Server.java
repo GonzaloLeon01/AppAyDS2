@@ -18,10 +18,8 @@ public class Server {
 
     private static final int PUERTO_TOTTEM=1234;
     private static final int PUERTO_OPERADOR=1300;
-    private static final int PUERTO_TV=1236;
-    private static final int PUERTO_ADMIN=1237;
     private static final int PUERTO_MONITOR=1500;
-    private static final int PUERTO_SERVIDOR=2500; //puerto para conectarse al otro servidor
+
     private boolean esPrimario=false;     //devuelve 1 si es principal el Monitor o devuelve 0 si es secundario.
 
 
@@ -122,6 +120,7 @@ public class Server {
 
             NotificacionHandler notificacionHandler = new NotificacionHandler(this);
             notificacionHandler.start(); // Inicia el hilo para enviar datos a Notificacion
+
 
             Timer timer = new Timer();
             timer.scheduleAtFixedRate(new TimerTask() {

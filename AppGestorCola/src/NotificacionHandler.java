@@ -5,7 +5,7 @@ import java.util.ArrayList;
 
 public class NotificacionHandler extends Thread {
     private Server server;
-    private static final int PUERTO_TV=1236;
+    private static final int PUERTO_TV2=1236;
     private static final long INTERVALO_ENVIO_MS = 5000; // Intervalo de envío en milisegundos (5 segundos en este ejemplo)
 
 
@@ -16,7 +16,7 @@ public class NotificacionHandler extends Thread {
     @Override
     public void run() {
         try {
-            ServerSocket serverSocket = new ServerSocket(PUERTO_TV);
+            ServerSocket serverSocket = new ServerSocket(PUERTO_TV2);
             System.out.println("Servidor esperando conexiones...");
 
             while (true) {
@@ -24,10 +24,23 @@ public class NotificacionHandler extends Thread {
                 System.out.println("TV connected");
 
                 while (true) {
+
+                    if (cliente.isClosed()){
+                        System.out.println("El cliente se ha desconectado.");
+                        break;
+                    }
+
                     ArrayList<Cliente> listaClientes = server.getClientesEnAtencion();
-                    ObjectOutputStream outputStream = new ObjectOutputStream(cliente.getOutputStream());
-                    outputStream.writeObject(listaClientes);
-                    outputStream.flush(); // Forzar el envío de datos
+                    try {
+                        ObjectOutputStream outputStream = new ObjectOutputStream(cliente.getOutputStream());
+                        outputStream.writeObject(listaClientes);
+                        outputStream.flush(); // Forzar el envío de datos
+                    } catch (IOException e) {
+                        System.out.println("Error al enviar la lista de clientesAtendidos a Estadisticas: " + e.getMessage());
+                        cliente.close();
+                        break;
+                    }
+
 
                     // Esperar el intervalo de tiempo antes de enviar los datos nuevamente
                     try {

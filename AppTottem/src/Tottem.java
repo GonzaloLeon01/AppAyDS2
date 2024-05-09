@@ -9,10 +9,76 @@ public class Tottem {
 
     private int numeroPuertoPrimario;
 
-    private static final int PUERTO_TOTTEM=1234;
-    private static final int PUERTO_MONITOR=1500;
     private static final int PUERTO_MONITOR_A_TOTTEM=1700;
     private int cantidadClientes;
+
+    // Constructor para colocar ip y puerto
+    public Tottem(String address) {
+        try {
+            while (true) {
+                System.out.println("Conectando con el Monitor...");
+                Socket monitorSocket = new Socket(address, PUERTO_MONITOR_A_TOTTEM);
+                System.out.println("Conexión exitosa con el Monitor.");
+
+                DataInputStream monitorInput = new DataInputStream(monitorSocket.getInputStream());
+                // Lee el puerto del servidor primario del Monitor
+                this.numeroPuertoPrimario = monitorInput.readInt();
+                System.out.println("Puerto del servidor primario recibido: " + numeroPuertoPrimario);
+
+                // Establece conexión con el servidor
+                //if (serverSocket == null || serverSocket.isClosed()) {
+                    System.out.println("El numero del puerto es: " + numeroPuertoPrimario);
+                    serverSocket = new Socket(address, numeroPuertoPrimario);
+                    System.out.println("Conexión establecida con el servidor en el puerto: " + numeroPuertoPrimario);
+
+                    // Abre flujo de entrada para recibir datos del servidor
+                    entrada = new DataInputStream(serverSocket.getInputStream());
+                    // Abre flujo de salida para enviar datos al servidor
+                    salida = new DataOutputStream(serverSocket.getOutputStream());
+
+                    // Realiza las operaciones de comunicación con el servidor aquí
+                    // Por ejemplo, enviar y recibir datos
+                    //String para leer un mensaje de la entrada
+
+                    String line = "";
+                    //keep reading until "Over" is input
+                    while (!line.equals("Over")) {
+                        try {
+                            DataInputStream input = new DataInputStream(System.in);
+                            line = input.readLine();
+                            salida.writeUTF(line); //mando dni al Servidor
+                            //Leo del servidor
+                            cantidadClientes = entrada.readInt();
+                            System.out.println(cantidadClientes);
+
+                        } catch (IOException i) {
+                            System.out.println(i);
+                            break;
+                        }
+                    }
+
+                // Espera antes de volver a leer
+                Thread.sleep(5000); // 5 segundos
+            }
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+        } finally {
+            // Cierre de recursos si es necesario
+            try {
+                if (entrada != null) entrada.close();
+                if (salida != null) salida.close();
+                if (serverSocket != null) serverSocket.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+
+    public static void main(String[] args) {
+        Tottem tottem = new Tottem("127.0.0.1");
+    }
+
 
     //Constructor para colocar ip y puerto
     /*public Tottem(String address) {
@@ -86,72 +152,4 @@ public class Tottem {
     }
 
      */
-
-    // Constructor para colocar ip y puerto
-    public Tottem(String address) {
-        try {
-            while (true) {
-                System.out.println("Conectando con el Monitor...");
-                Socket monitorSocket = new Socket(address, PUERTO_MONITOR_A_TOTTEM);
-                System.out.println("Conexión exitosa con el Monitor.");
-
-                DataInputStream monitorInput = new DataInputStream(monitorSocket.getInputStream());
-                System.out.println("VUELVE");
-                // Lee el puerto del servidor primario del Monitor
-                this.numeroPuertoPrimario = monitorInput.readInt();
-                System.out.println("Puerto del servidor primario recibido: " + numeroPuertoPrimario);
-
-                // Establece conexión con el servidor
-                //if (serverSocket == null || serverSocket.isClosed()) {
-                    System.out.println("El numero del puerto es: " + numeroPuertoPrimario);
-                    serverSocket = new Socket(address, numeroPuertoPrimario);
-                    System.out.println("Conexión establecida con el servidor en el puerto: " + numeroPuertoPrimario);
-
-                    // Abre flujo de entrada para recibir datos del servidor
-                    entrada = new DataInputStream(serverSocket.getInputStream());
-                    // Abre flujo de salida para enviar datos al servidor
-                    salida = new DataOutputStream(serverSocket.getOutputStream());
-
-                    // Realiza las operaciones de comunicación con el servidor aquí
-                    // Por ejemplo, enviar y recibir datos
-                    //String para leer un mensaje de la entrada
-
-                    String line = "";
-                    //keep reading until "Over" is input
-                    while (!line.equals("Over")) {
-                        try {
-                            DataInputStream input = new DataInputStream(System.in);
-                            line = input.readLine();
-                            salida.writeUTF(line); //mando dni al Servidor
-                            //Leo del servidor
-                            cantidadClientes = entrada.readInt();
-                            System.out.println(cantidadClientes);
-
-                        } catch (IOException i) {
-                            System.out.println(i);
-                            break;
-                        }
-                    }
-
-                // Espera antes de volver a leer
-                Thread.sleep(5000); // 5 segundos
-            }
-        } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
-        } finally {
-            // Cierre de recursos si es necesario
-            try {
-                if (entrada != null) entrada.close();
-                if (salida != null) salida.close();
-                if (serverSocket != null) serverSocket.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-
-    public static void main(String[] args) {
-        Tottem tottem = new Tottem("127.0.0.1");
-    }
 }

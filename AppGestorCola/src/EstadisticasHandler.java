@@ -24,10 +24,22 @@ public class EstadisticasHandler extends Thread {
                 System.out.println("Admin connected");
 
                 while (true) {
+                    if (cliente.isClosed()){
+                        System.out.println("El cliente se ha desconectado.");
+                        break;
+                    }
+
                     ArrayList<Cliente> listaClientes = server.getClientesAtendidos();
-                    ObjectOutputStream outputStream = new ObjectOutputStream(cliente.getOutputStream());
-                    outputStream.writeObject(listaClientes);
-                    outputStream.flush(); // Forzar el envío de datos
+
+                    try {
+                        ObjectOutputStream outputStream = new ObjectOutputStream(cliente.getOutputStream());
+                        outputStream.writeObject(listaClientes);
+                        outputStream.flush(); // Forzar el envío de datos
+                    } catch (IOException e) {
+                        System.out.println("Error al enviar la lista de clientesAtendidos a Estadisticas: " + e.getMessage());
+                        cliente.close();
+                        break;
+                    }
 
                     // Esperar el intervalo de tiempo antes de enviar los datos nuevamente
                     try {
