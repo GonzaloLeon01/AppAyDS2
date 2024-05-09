@@ -17,9 +17,7 @@ public class Server {
     private Cliente primerCliente;
 
     private static final int PUERTO_TOTTEM=1234;
-    private static final int PUERTO_OPERADOR=1300;
     private static final int PUERTO_MONITOR=1500;
-
     private boolean esPrimario=false;     //devuelve 1 si es principal el Monitor o devuelve 0 si es secundario.
 
 

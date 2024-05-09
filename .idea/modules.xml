@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/App.iml" filepath="$PROJECT_DIR$/.idea/App.iml" />
+      <module fileurl="file://$PROJECT_DIR$/AppAtencionAlCliente/AppAtencionAlCliente.iml" filepath="$PROJECT_DIR$/AppAtencionAlCliente/AppAtencionAlCliente.iml" />
+      <module fileurl="file://$PROJECT_DIR$/AppEstadisticas/AppEstadisticas.iml" filepath="$PROJECT_DIR$/AppEstadisticas/AppEstadisticas.iml" />
+      <module fileurl="file://$PROJECT_DIR$/AppGestorCola/AppGestorCola.iml" filepath="$PROJECT_DIR$/AppGestorCola/AppGestorCola.iml" />
+      <module fileurl="file://$PROJECT_DIR$/AppGestorCola2/AppGestorCola2.iml" filepath="$PROJECT_DIR$/AppGestorCola2/AppGestorCola2.iml" />
+      <module fileurl="file://$PROJECT_DIR$/AppMonitor/AppMonitor.iml" filepath="$PROJECT_DIR$/AppMonitor/AppMonitor.iml" />
+      <module fileurl="file://$PROJECT_DIR$/AppNotificacion/AppNotificacion.iml" filepath="$PROJECT_DIR$/AppNotificacion/AppNotificacion.iml" />
+      <module fileurl="file://$PROJECT_DIR$/AppTottem/AppTottem.iml" filepath="$PROJECT_DIR$/AppTottem/AppTottem.iml" />
+    </modules>
+  </component>
+</project>
